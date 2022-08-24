@@ -1,0 +1,214 @@
+<template>
+  <div id="content" class="p-5">
+    <div id="members-filters" class="flex flex-row items-center justify-between pb-5">
+      <div class="flex flex-row items-center justify-between pb-5 w-full" id="filter">
+        <div class="flex space-x-3">
+          <button
+            @click="openModalAdd"
+            class="
+              bg-white
+              bor
+              border
+              capitalize
+              border-DPGREEN-500 border-dplgreen-400 border-solid
+              flex
+              focus:outline-none
+              hover:bg-DPGREEN-500 hover:duration-200 hover:text-white
+              items-center
+              px-3
+              py-2
+              rounded-lg
+              text-xs
+            "
+            style="min-width: 110px"
+          >
+            add absence
+          </button>
+
+          <button
+            @click="openAbsenceType = !openAbsenceType"
+            class="
+              bg-white
+              capitalize
+              bor
+              border border-DPGREEN-500 border-dplgreen-400 border-solid
+              flex
+              focus:outline-none
+              hover:bg-DPGREEN-500 hover:duration-200 hover:text-white
+              items-center
+              px-3
+              py-2
+              rounded-lg
+              text-xs
+            "
+            style="min-width: 110px"
+          >
+            absence type
+          </button>
+        </div>
+
+        <div class="flex">
+          <div v-for="(data, index) in absenceFilter" :key="index" class="hidden xl:block w-52 mx-2 bg-white rounded-md">
+            <div class="focus-within:text-DPGREY-400 relative">
+              <input
+                @focus="getClientPosition(data.allData, $event, index)"
+                @blur="toggleOption"
+                readonly
+                :placeholder="data.value && data.value.length > 0 ? data.value : data.label"
+                class="dp-shadow w-45 capitalize cursor-pointer focus:bg-white focus:outline-none focus:text-gray-900 p-2 rounded-md text-DPGREY-500"
+              />
+
+              <span class="absolute flex inset-y-0 items-center right-0 pr-2">
+                <button @click="resetOption" v-if="data.dataActive !== null" class="p-1">
+                  <v-icon small color="ARROWCOLOR"> mdi-close </v-icon>
+                </button>
+                <button type="submit" class="p-1 focus:outline-none focus:shadow-outline">
+                  <img class="w-3 h-3" src="~assets/images/icon-arrow-down.svg" alt="" />
+                </button>
+              </span>
+            </div>
+          </div>
+
+          <div id="input" class="flex bg-transparent items-center">
+            <div class="hidden xl:block w-28 mx-2 bg-white rounded-md">
+              <div class="focus-within:text-DPGREY-400 relative mx-2">
+                <input type="date" placeholder="" class="dp-shadow w-45 capitalize focus:bg-white focus:outline-none focus:text-gray-900 p-2 rounded-md" v-model="startDate" />
+              </div>
+            </div>
+
+            <span>-</span>
+
+            <div class="hidden xl:block w-28 mx-2 bg-white rounded-md">
+              <div class="focus-within:text-DPGREY-400 relative">
+                <input type="date" placeholder="" class="dp-shadow w-45 capitalize focus:bg-white focus:outline-none focus:text-gray-900 p-2 rounded-md" v-model="endDate" />
+              </div>
+            </div>
+          </div>
+          <!-- This is form search -->
+          <div class="flex flex-row" id="search">
+            <div class="hidden bg-white md:block md:mr-4 xl:mr-0 rounded-md">
+              <div class="focus-within:text-DPGREY-400 relative text-DPGREY-400">
+                <span class="absolute flex inset-y-0 items-center left-0 pl-1">
+                  <button type="submit" class="p-1 focus:outline-none focus:shadow-outline">
+                    <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" class="h-6 text-DPGREY-200 w-4">
+                      <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                  </button>
+                </span>
+                <input type="text" class="dp-shadow w-40 focus:bg-white focus:outline-none focus:text-gray-900 pl-8 py-2 rounded-md text-DPGREY-500" placeholder="Search..." autocomplete="off" />
+              </div>
+            </div>
+
+            <button class="focus:outline-none block xl:hidden relative" @click="filterModal = !filterModal">
+              <img src="@/assets/images/icon-settings.svg" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <AbsenceTableContent @editAbsence="openAddAbsence = !openAddAbsence" />
+
+    <transition class="" name="slide-fade">
+      <div
+        v-if="openDropdown"
+        :class="openDropdown ? 'duration-200 absolute h-32' : 'opacity-0'"
+        class="px-2 rounded-lg overflow-auto py-4 z-50 bg-white dp-shadow"
+        :style="openDropdown ? `left: ${leftPosition(sizing.left)}px; right: ${sizing.right}px; top: ${topPosition(sizing.top)}px; bottom: ${sizing.bottom}px; width: ${sizing.width}px` : false"
+      >
+        <div class="flex justify-start flex-col">
+          <div
+            v-for="(data, index) in elementOption"
+            :key="index"
+            @click="newValue(data, index)"
+            :class="index == checkDataActive() ? 'bg-DPGREEN-100  text-DPGREEN-400' : 'hover:text-DPGREEN-500 cursor-pointer hover:ml-2 hover:duration-200'"
+            class="py-2 rounded-md"
+          >
+            <span class="capitalize ml-2 cursor-pointer" v-text="data.label"></span>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <DashboardModalFilter @closeFilter="filterModal = !filterModal" :openFilter="filterModal" :dataFilter="teamMembersFilter" />
+
+    <AbsenceModalAddAbsence :openAddAbsence="openAddAbsence" @closeAddAbsence="openAddAbsence = !openAddAbsence" />
+
+    <AbsenceModalAbsenceType :openAbsenceType="openAbsenceType" @closeAbsenceType="openAbsenceType = !openAbsenceType" />
+  </div>
+</template>
+
+<script lang="ts">
+import { defineComponent, ref, useAsync } from "@nuxtjs/composition-api";
+import allFilter from "~/data_component/Dashboard/AllFilter";
+import useGeneralFeatures from "~/controller/GeneralFeatures";
+import addNewAbsenceData from "~/data_component/Attendance/AddAbsence";
+import useOptionSelect from "~/controller/OptionSelect";
+import useAbsenceSettings from "~/controller/FirstSettings/AbsenceSettings";
+import useMembersSettings from "~/controller/FirstSettings/MembersSettings";
+
+export default defineComponent({
+  setup() {
+    const { getAllAbsence, openModalAdd } = useAbsenceSettings();
+    const { openAddAbsence } = addNewAbsenceData();
+    const { fetchMembers } = useMembersSettings();
+    const { absenceFilter } = allFilter();
+
+    const startDate = ref(new Date());
+    const endDate = ref(new Date());
+
+    const { elementOption, openDropdown, sizing, resetOption, checkDataActive, newValue, toggleOption, getClientPosition } = useOptionSelect(absenceFilter);
+
+    const topPosition = (position: any) => position - 30;
+
+    const leftPosition = (position: any) => position - 255;
+
+    const openAbsenceType = ref(false);
+    const filterModal = ref(false);
+
+    console.log("starDate, endDate ", startDate, endDate);
+
+    const { skeletonLoader } = useGeneralFeatures();
+
+    skeletonLoader.value = true;
+    useAsync(async () => {
+      await getAllAbsence();
+      fetchMembers("");
+      skeletonLoader.value = false;
+    });
+
+    return {
+      openAddAbsence,
+      openAbsenceType,
+      filterModal,
+      openModalAdd,
+      elementOption,
+      openDropdown,
+      sizing,
+      resetOption,
+      checkDataActive,
+      newValue,
+      toggleOption,
+      getClientPosition,
+      topPosition,
+      leftPosition,
+      absenceFilter,
+      startDate,
+      endDate,
+    };
+  },
+});
+</script>
+
+<style>
+.slide-fade-enter-active {
+  transform: translateY(-10px);
+  opacity: 0;
+  transition: all 0.1s ease;
+}
+.slide-fade-leave-active {
+  transform: translateY(-20px);
+  opacity: 0;
+  transition: all 0.8s cubic-bezier(1, 0.5, 0.8, 1) ease;
+}
+</style>
